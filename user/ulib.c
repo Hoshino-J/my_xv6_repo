@@ -65,12 +65,42 @@ int stat(const char *n, struct stat *st) {
   return r;
 }
 
+// convert string to integer
 int atoi(const char *s) {
   int n;
 
   n = 0;
   while ('0' <= *s && *s <= '9') n = n * 10 + *s++ - '0';
   return n;
+}
+
+// convert integer to string
+void itoa(int n, char s[]) {
+    int i = 0;
+    int is_negative = 0;
+
+    if (n < 0) {
+        is_negative = 1;
+        n = -n;
+    }
+
+    do {
+        s[i++] = n % 10 + '0';
+        n /= 10;
+    } while (n > 0);
+
+    if (is_negative) {
+        s[i++] = '-';
+    }
+
+    s[i] = '\0';
+
+    // invert string
+    for (int j = 0; j < i / 2; j++) {
+        char temp = s[j];
+        s[j] = s[i - j - 1];
+        s[i - j - 1] = temp;
+    }
 }
 
 void *memmove(void *vdst, const void *vsrc, int n) {

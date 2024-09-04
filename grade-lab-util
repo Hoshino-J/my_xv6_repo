@@ -28,12 +28,72 @@ def test_sleep():
     ]), stop_breakpoint('sys_sleep'))
     r.match('\\$ sleep 10', no=['FAIL'])
 
-@test(20, "pingpong")
+@test(10, "pingpong lenient testing")
 def test_pingpong():
     r.run_qemu(shell_script([
         'pingpong', 'echo OK'
     ]))
-    r.match('^\\d+: received ping$', '^\\d+: received pong$', '^OK$')
+    r.match('^\\d+: received ping from pid \\d+$', '^\\d+: received pong from pid \\d+$', '^OK$')
+
+@test(10, "pingpong strict testing with changing pids")
+def test_pingpong_strict_pid_change():
+    def strict_match(line):
+        """Regular expression to match ping/pong lines and capture process IDs"""
+        match_ping = re.match(r'^(\d+): received ping from pid (\d+)$', line)
+        match_pong = re.match(r'^(\d+): received pong from pid (\d+)$', line)
+        
+        if match_ping:
+            pid1, pid2 = match_ping.groups()
+            return (int(pid1), int(pid2))  # Return the captured process IDs
+            
+        elif match_pong:
+            pid1, pid2 = match_pong.groups()
+            return (int(pid1), int(pid2))  # Return the captured process IDs
+        
+        return None
+
+    # Run QEMU and execute pingpong three times
+    r.run_qemu(shell_script([
+        'pingpong', 'pingpong', 'pingpong', 'echo OK'
+    ]))
+
+    # Clean the output, remove ANSI color codes, and filter valid lines
+    clean_lines = []
+    for line in r.qemu.output.splitlines():
+        line = re.sub(r'\x1b\[[0-9;]*m', '', line)  # Remove color codes
+        if re.match(r'^\d+: received (ping|pong) from pid \d+$', line) or re.match(r'^OK$', line):
+            clean_lines.append(line)
+
+    # Initialize variables to store previous process IDs
+    prev_ping_pid = None
+    prev_pong_pid = None
+
+    # Iterate through each run, two lines per run
+    for i in range(0, len(clean_lines) - 2, 2):
+        # Get the ping and pong lines
+        ping_match = strict_match(clean_lines[i])
+        pong_match = strict_match(clean_lines[i+1])
+
+        # Check if the format matches
+        assert ping_match and pong_match, "Ping/Pong output format mismatch"
+        
+        # Get the process IDs for the current run
+        ping_pid, pong_pid = ping_match[0], ping_match[1]
+
+        # Check if the process IDs match
+        assert ping_pid == pong_match[1], f"PID mismatch: {ping_pid} != {pong_match[1]}"
+        assert pong_pid == pong_match[0], f"PID mismatch: {pong_pid} != {pong_match[0]}"
+
+        # Check if the process IDs are different from the previous run
+        if prev_ping_pid is not None and prev_pong_pid is not None:
+            assert ping_pid != prev_ping_pid and pong_pid != prev_pong_pid, \
+                "Process IDs did not change between runs"
+
+        # Store the current process IDs for comparison in the next run
+        prev_ping_pid, prev_pong_pid = ping_pid, pong_pid
+
+    # Finally, match the echo OK output
+    assert clean_lines[-1] == 'OK', "Final OK message missing"
 
 @test(10, "find, in current directory")
 def test_find_curdir():
