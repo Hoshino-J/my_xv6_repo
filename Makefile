@@ -66,6 +66,7 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
+GDB = $(TOOLPREFIX)gdb
 
 CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb -DTEST
 
@@ -219,6 +220,16 @@ qemu: $K/kernel fs.img
 qemu-gdb: $K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
+GDBARGS = 
+GDBARGS += -ex 'set architecture riscv:rv64'
+GDBARGS += -ex 'target remote 127.0.0.1:26000'
+GDBARGS += -ex 'symbol-file kernel/kernel'
+GDBARGS += -ex 'set riscv use-compressed-breakpoints yes'
+
+
+gdb: 
+	$(GDB) $(GDBARGS)
 
 ##
 ##  FOR testing lab grading script
