@@ -130,22 +130,42 @@ def test_find_file_recursive():
             './%s/%s/%s' % (dirs[0], dirs[1], needle),
             './%s/%s' % (dirs[2], needle))
     
-@test(5, "find, find file and dir recursive")
-def test_find_dir_recursive():
+@test(5, "find, find dir recursive with no duplicates")
+def test_find_recursive_no_duplicates():
     needle = random_str()
     dirs = [random_str() for _ in range(3)]
+    
     r.run_qemu(shell_script([
         'mkdir %s' % dirs[0],
         'echo > %s/%s' % (dirs[0], needle),
         'mkdir %s/%s' % (dirs[0], dirs[1]),
-        'mkdir > %s/%s/%s' % (dirs[0], dirs[1], needle),
+        'mkdir %s/%s/%s' % (dirs[0], dirs[1], needle),
         'mkdir %s' % dirs[2],
         'echo > %s/%s' % (dirs[2], needle),
         'find . %s' % needle
     ]))
-    r.match('./%s/%s' % (dirs[0], needle),
-            './%s/%s/%s' % (dirs[0], dirs[1], needle),
-            './%s/%s' % (dirs[2], needle))
+
+    expected_lines = [
+        './%s/%s' % (dirs[0], needle),
+        './%s/%s/%s' % (dirs[0], dirs[1], needle),
+        './%s/%s' % (dirs[2], needle)
+    ]
+
+    output_lines = r.qemu.output.splitlines()
+
+    clean_lines = []
+    for line in output_lines:
+        line = re.sub(r'\x1b\[[0-9;]*m', '', line)  
+        if re.match(r'^\./.*$', line):  
+            clean_lines.append(line)
+
+    unique_clean_lines = list(set(clean_lines))
+
+    for expected in expected_lines:
+        assert expected in unique_clean_lines, "Expected path '%s' not found in output" % expected
+
+    assert len(clean_lines) == len(expected_lines), \
+        "Expected %d unique lines, but found %d" % (len(expected_lines), len(unique_clean_lines))
 
 
 run_tests()
