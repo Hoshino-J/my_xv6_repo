@@ -95,7 +95,7 @@ def test_pingpong_strict_pid_change():
     # Finally, match the echo OK output
     assert clean_lines[-1] == 'OK', "Final OK message missing"
 
-@test(10, "find, in current directory")
+@test(5, "find, in current directory and create a file")
 def test_find_curdir():
     fn = random_str()
     r.run_qemu(shell_script([
@@ -104,7 +104,16 @@ def test_find_curdir():
     ]))
     r.match('./%s' % fn)
 
-@test(10, "find, recursive")
+@test(5, "find, in current directory and create a dir")
+def test_find_curdir():
+    fn = random_str()
+    r.run_qemu(shell_script([
+        'mkdir %s' % fn,
+        'find . %s' % fn
+    ]))
+    r.match('./%s' % fn)
+
+@test(5, "find, find file recursive")
 def test_find_recursive():
     needle = random_str()
     dirs = [random_str() for _ in range(3)]
@@ -120,5 +129,23 @@ def test_find_recursive():
     r.match('./%s/%s' % (dirs[0], needle),
             './%s/%s/%s' % (dirs[0], dirs[1], needle),
             './%s/%s' % (dirs[2], needle))
+    
+@test(5, "find, find dir recursive")
+def test_find_recursive():
+    needle = random_str()
+    dirs = [random_str() for _ in range(3)]
+    r.run_qemu(shell_script([
+        'mkdir %s' % dirs[0],
+        'echo > %s/%s' % (dirs[0], needle),
+        'mkdir %s/%s' % (dirs[0], dirs[1]),
+        'mkdir > %s/%s/%s' % (dirs[0], dirs[1], needle),
+        'mkdir %s' % dirs[2],
+        'echo > %s/%s' % (dirs[2], needle),
+        'find . %s' % needle
+    ]))
+    r.match('./%s/%s' % (dirs[0], needle),
+            './%s/%s/%s' % (dirs[0], dirs[1], needle),
+            './%s/%s' % (dirs[2], needle))
+
 
 run_tests()
