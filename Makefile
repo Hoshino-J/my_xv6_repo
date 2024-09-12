@@ -211,7 +211,6 @@ DOCKER_RUN_ARGS += -it
 DOCKER_RUN_ARGS += --privileged
 DOCKER_RUN_ARGS += --network="host"
 DOCKER_RUN_ARGS += -v $(PWD):/mnt
-DOCKER_RUN_ARGS += -v /dev:/dev
 DOCKER_RUN_ARGS += -w /mnt
 DOCKER_RUN_ARGS += $(DOCKER_NAME)
 DOCKER_RUN_ARGS += bash
