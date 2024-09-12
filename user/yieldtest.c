@@ -2,15 +2,13 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
-const int nonblock = 1;
-
 void yieldtest(void) {
   printf("yield test\n");
 
   for (int i = 0; i < 3; i++) {
     int pid = fork();
     if (pid == 0) {
-      printf("switch to child %d\n", i);
+      printf("Child with PID %d begins to run\n", getpid());
       exit(0);
     } else {
     }

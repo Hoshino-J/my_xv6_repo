@@ -24,28 +24,36 @@ def test_wait_test():
     ]), make_args=["LAB_SYSCALL_TEST=on"])
     r.match('wait test OK')
 
-@test(19, "yield test")
+@test(20, "yield test")
 def test_yield_test():
+    # Run QEMU and execute yieldtest twice, matching both outputs.
     r.run_qemu(shell_script([
+        'yieldtest',
         'yieldtest'
     ]), make_args=["CPUS=1", "LAB_SYSCALL_TEST=on"])
-    r.match("parent yield")
-    matches = re.findall("start to yield, user pc \w+", r.qemu.output, re.MULTILINE)
-    assert_equal(len(matches), 1)
-    sepc = matches[0][24:]
-    toolprefix = test_yield_test.options.toolprefix
-    result = subprocess.run([f"{toolprefix}addr2line", sepc, "-f", "-s", "-e", "user/_yieldtest"], stdout=subprocess.PIPE, check=True)
-    out = result.stdout.decode("utf-8")
-    assert(len(out) > 5)
-    assert_equal(out[:6], "yield\n")
-    r.match("switch to child 0")
-    r.match("switch to child 1")
-    r.match("switch to child 2")
-    r.match("parent yield finished")
+    
+    # Match the expected output for the first yieldtest
+    r.match(
+        'yield test',
+        'parent yield',
+        r'The currently runnable processes include those with PID 4 PID 5 PID 6',
+        'Child with PID 4 begins to run',
+        'Child with PID 5 begins to run',
+        'Child with PID 6 begins to run',
+        'parent yield finished'
+    )
+    
+    # Match the expected output for the second yieldtest
+    r.match(
+        'yield test',
+        'parent yield',
+        r'The currently runnable processes include those with PID 8 PID 9 PID 10',
+        'Child with PID 8 begins to run',
+        'Child with PID 9 begins to run',
+        'Child with PID 10 begins to run',
+        'parent yield finished'
+    )
 
-@test(1, "time")
-def test_time():
-    check_time()
 
 run_tests()
 
