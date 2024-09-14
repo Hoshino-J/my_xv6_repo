@@ -49,6 +49,8 @@ endif
 ifndef TOOLPREFIX
 TOOLPREFIX := $(shell if riscv64-unknown-elf-objdump -i 2>&1 | grep 'elf64-big' >/dev/null 2>&1; \
 	then echo 'riscv64-unknown-elf-'; \
+	elif riscv64-elf-objdump -i 2>&1 | grep 'elf64-big' >/dev/null 2>&1; \
+	then echo 'riscv64-elf-'; \
 	elif riscv64-linux-gnu-objdump -i 2>&1 | grep 'elf64-big' >/dev/null 2>&1; \
 	then echo 'riscv64-linux-gnu-'; \
 	elif riscv64-unknown-linux-gnu-objdump -i 2>&1 | grep 'elf64-big' >/dev/null 2>&1; \
@@ -66,6 +68,7 @@ AS = $(TOOLPREFIX)gas
 LD = $(TOOLPREFIX)ld
 OBJCOPY = $(TOOLPREFIX)objcopy
 OBJDUMP = $(TOOLPREFIX)objdump
+GDB = $(TOOLPREFIX)gdb
 
 CFLAGS = -Wall -Werror -O -fno-omit-frame-pointer -ggdb
 
@@ -197,6 +200,25 @@ clean:
         $U/usys.S \
 	$(UPROGS)
 
+
+DOCKER_NAME = xv6-archlinux
+
+build_docker:
+	docker build --network="host" -t ${DOCKER_NAME} .
+
+DOCKER_RUN_ARGS := run
+DOCKER_RUN_ARGS += --rm
+DOCKER_RUN_ARGS += -it
+DOCKER_RUN_ARGS += --privileged
+DOCKER_RUN_ARGS += --network="host"
+DOCKER_RUN_ARGS += -v $(PWD):/mnt
+DOCKER_RUN_ARGS += -w /mnt
+DOCKER_RUN_ARGS += $(DOCKER_NAME)
+DOCKER_RUN_ARGS += bash
+
+docker:
+	docker $(DOCKER_RUN_ARGS)
+
 # try to generate a unique GDB port
 GDBPORT = $(shell expr `id -u` % 5000 + 25000)
 # QEMU's gdb stub command line changed in 0.11
@@ -220,6 +242,16 @@ qemu: $K/kernel fs.img
 qemu-gdb: $K/kernel .gdbinit fs.img
 	@echo "*** Now run 'gdb' in another window." 1>&2
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
+GDBARGS = 
+GDBARGS += -ex 'set architecture riscv:rv64'
+GDBARGS += -ex 'target remote 127.0.0.1:$(GDBPORT)'
+GDBARGS += -ex 'symbol-file kernel/kernel'
+GDBARGS += -ex 'set riscv use-compressed-breakpoints yes'
+
+
+gdb: 
+	$(GDB) $(GDBARGS)
 
 ##
 ##  FOR testing lab grading script
