@@ -2,11 +2,11 @@
 #include "user.h"
 
 int main() {
-    int c2f[2], f2c[2], p2c[2];  // 定义三个管道
+    int f2c[2], c2f[2]; // 定义两个管道,f2c用于父进程向子进程传输数据,c2f用于子进程向父进程传输数据
     char buf[100];
     int parent_pid = getpid(); // 获取父进程PID
 
-    if (pipe(c2f) < 0 || pipe(f2c) < 0 || pipe(p2c) < 0) {
+    if (pipe(f2c) < 0 || pipe(c2f) < 0) {
         printf("pipe error\n");
         exit(-1);
     }
@@ -17,34 +17,27 @@ int main() {
         exit(-1);
     }
 
-    if (pid > 0) { // 父进程
-        close(c2f[0]); // 关闭读端
-        close(f2c[1]); // 关闭写端
-        close(p2c[0]); // 关闭子进程读端
+    if (pid > 0) { // 父进程读c2f管道,写f2c管道
+        close(f2c[0]); // 关闭f2c读端
+        close(c2f[1]); // 关闭c2f写端
 
-        write(c2f[1], "ping", 5); // 向管道写入数据
-        write(p2c[1], &parent_pid, sizeof(parent_pid)); // 传递父进程PID给子进程
-        read(f2c[0], buf, sizeof(buf)); // 从子进程接收数据
+        write(f2c[1], "ping", 5); // 向管道写入数据
+        read(c2f[0], buf, sizeof(buf)); // 从子进程接收数据
         printf("%d: received %s from pid %d\n", getpid(), buf, pid); // 这里的pid是子进程的pid
         
-        close(c2f[1]);
-        close(f2c[0]);
-        close(p2c[1]);
-        wait(0); // 等待子进程结束
-    } else { // 子进程
-        close(c2f[1]); // 关闭写端
-        close(f2c[0]); // 关闭读端
-        close(p2c[1]); // 关闭父进程写端
-
-        read(c2f[0], buf, sizeof(buf)); // 从父进程接收数据
-        read(p2c[0], &parent_pid, sizeof(parent_pid)); // 从父进程接收PID
-        printf("%d: received %s from pid %d\n", getpid(), buf, parent_pid); // 这里的parent_pid是父进程的pid
-        
-        write(f2c[1], "pong", 5); // 向父进程写入数据
-
-        close(c2f[0]);
         close(f2c[1]);
-        close(p2c[0]);
+        close(c2f[0]);
+        wait(0); // 等待子进程结束
+    } else { // 子进程读f2c管道,写c2f管道
+        close(f2c[1]); // 关闭f2c写端
+        close(c2f[0]); // 关闭c2f读端
+
+        read(f2c[0], buf, sizeof(buf)); // 从父进程接收数据
+        printf("%d: received %s from pid %d\n", getpid(), buf, parent_pid); // 这里的parent_pid是父进程的pid        
+        write(c2f[1], "pong", 5); // 向父进程写入数据
+
+        close(f2c[0]);
+        close(c2f[1]);
         exit(0);
     }
     return 0;
