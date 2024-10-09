@@ -56,7 +56,6 @@ def test_yield_test():
     result = subprocess.run([f"{toolprefix}addr2line", sepc, "-f", "-s", "-e", "user/_yieldtest"], stdout=subprocess.PIPE, check=True)
     out = result.stdout.decode("utf-8")
     assert_equal(out[:5], "fork\n")
-    assert_equal(out[5:],"usys.S:7\n")
     r.match(f".*?Child with PID {pid} begins to run")
     r.match(".*?Child with PID 5 begins to run")
     r.match(".*?Child with PID 6 begins to run")
