@@ -2,43 +2,43 @@
 #include "user.h"
 
 int main() {
-    int f2c[2], c2f[2]; // 定义两个管道,f2c用于父进程向子进程传输数据,c2f用于子进程向父进程传输数据
-    char buf[100];
+    int f2c[2];         // 定义一个管道,f2c用于父进程向子进程传输数据
     int parent_pid = getpid(); // 获取父进程PID
 
-    if (pipe(f2c) < 0 || pipe(c2f) < 0) {
+    // 创建管道,并检查是否成功
+    if (pipe(f2c) < 0) {
         printf("pipe error\n");
         exit(-1);
     }
 
-    int pid = fork();
+    int pid = fork();   // 创建子进程
     if (pid < 0) {
         printf("fork error\n");
         exit(-1);
     }
 
-    if (pid > 0) { // 父进程读c2f管道,写f2c管道
-        close(f2c[0]); // 关闭f2c读端
-        close(c2f[1]); // 关闭c2f写端
+    if (pid > 0) { // 父进程写f2c管道
+        close(f2c[0]);  // 关闭f2c读端
 
-        write(f2c[1], "ping", 5); // 向管道写入数据
-        read(c2f[0], buf, sizeof(buf)); // 从子进程接收数据
-        printf("%d: received %s from pid %d\n", getpid(), buf, pid); // 这里的pid是子进程的pid
+        // 向子进程传递父进程的pid
+        write(f2c[1], (char*)&parent_pid, sizeof(parent_pid));      // 将父进程的pid写入管道
         
-        close(f2c[1]);
-        close(c2f[0]);
-        wait(0); // 等待子进程结束
-    } else { // 子进程读f2c管道,写c2f管道
-        close(f2c[1]); // 关闭f2c写端
-        close(c2f[0]); // 关闭c2f读端
+        close(f2c[1]);  // 关闭f2c写端
 
-        read(f2c[0], buf, sizeof(buf)); // 从父进程接收数据
-        printf("%d: received %s from pid %d\n", getpid(), buf, parent_pid); // 这里的parent_pid是父进程的pid        
-        write(c2f[1], "pong", 5); // 向父进程写入数据
+        wait(0); // 等待子进程结束后再打印避免父子进程的printf语句交替进行
+        printf("%d: received pong from pid %d\n", parent_pid, pid); // 这里的pid由fork函数返回值提供
 
-        close(f2c[0]);
-        close(c2f[1]);
-        exit(0);
+    } else {    // 子进程读f2c管道
+        close(f2c[1]);  // 关闭f2c写端
+        
+        // 从管道中读取父进程的pid
+        int received_parent_pid;
+        read(f2c[0], (char*)&received_parent_pid, sizeof(received_parent_pid)); // 从管道中读取父进程的pid
+        printf("%d: received ping from pid %d\n", getpid(), received_parent_pid);        
+
+        close(f2c[0]);  // 关闭f2c读端
+
+        exit(0);    // 子进程退出
     }
     return 0;
 }
