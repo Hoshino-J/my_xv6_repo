@@ -3,8 +3,7 @@
 
 int main() {
     int f2c[2];         // 定义一个管道,f2c用于父进程向子进程传输数据
-    int parent_pid = getpid(); // 获取父进程PID
-
+    
     // 创建管道,并检查是否成功
     if (pipe(f2c) < 0) {
         printf("pipe error\n");
@@ -21,6 +20,7 @@ int main() {
         close(f2c[0]);  // 关闭f2c读端
 
         // 向子进程传递父进程的pid
+        int parent_pid = getpid(); // 获取父进程PID
         write(f2c[1], (char*)&parent_pid, sizeof(parent_pid));      // 将父进程的pid写入管道
         
         close(f2c[1]);  // 关闭f2c写端
