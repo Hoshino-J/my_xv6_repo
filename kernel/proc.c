@@ -394,7 +394,7 @@ void exit(int status) {
 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
-int wait(uint64 addr) {
+int wait(uint64 addr, int flags) {
   struct proc *np;
   int havekids, pid;
   struct proc *p = myproc();
@@ -438,7 +438,13 @@ int wait(uint64 addr) {
       return -1;
     }
 
-    // Wait for a child to exit.
+    // 处理非阻塞情况
+    if (flags == 1) {   // flags为1表示非阻塞情况,直接返回-1不进行阻塞
+      release(&p->lock);
+      return -1;
+    }
+
+    // Wait for a child to exit.(阻塞等待)
     sleep(p, &p->lock);  // DOC: wait-sleep
   }
 }

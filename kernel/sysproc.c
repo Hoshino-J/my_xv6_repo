@@ -20,8 +20,10 @@ uint64 sys_fork(void) { return fork(); }
 
 uint64 sys_wait(void) {
   uint64 p;
-  if (argaddr(0, &p) < 0) return -1;
-  return wait(p);
+  int flags;  // 添加flags变量
+
+  if (argaddr(0, &p) < 0 || argint(1, &flags) < 0) return -1;   // 增添获取flags参数
+  return wait(p, flags);    // 调用新的wait函数
 }
 
 uint64 sys_sbrk(void) {
