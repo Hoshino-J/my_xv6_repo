@@ -83,3 +83,32 @@ uint64 sys_rename(void) {
   p->name[len] = '\0';
   return 0;
 }
+
+// 增加环形遍历进程表的功能
+uint64 sys_yield(void) {
+  struct proc *p = myproc();
+
+  // 1. 打印当前进程的上下文保存地址区间和用户态的PC值
+  printf("Save the context of the process to the memory region from address %p to %p\n", 
+         &p->context, ((char *)&p->context) + sizeof(p->context));
+  printf("Current running process pid is %d and user pc is %p\n", 
+         p->pid, p->trapframe->epc);
+
+  // 2. 遍历进程表，找到下一个RUNNABLE的进程
+  for (int i = 0; i < NPROC; i++) {
+    struct proc *iter = &proc[(p - proc + i + 1) % NPROC];  // 环形遍历
+    acquire(&iter->lock);
+    if (iter->state == RUNNABLE) {
+      printf("Next runnable process pid is %d and user pc is %p\n", 
+             iter->pid, iter->trapframe->epc);
+      release(&iter->lock);
+      break;
+    }
+    release(&iter->lock);
+  }
+
+  // 3. 挂起当前进程并让出CPU
+  yield();
+
+  return 0;
+}

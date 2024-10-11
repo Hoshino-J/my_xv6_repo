@@ -334,12 +334,12 @@ void exit(int status) {
   // 根据original_parent->state打印父进程状态
   const char *parent_state;
   switch(original_parent->state) {
-    case UNUSED:   parent_state = "unused"; break;
-    case SLEEPING: parent_state = "sleep"; break;
-    case RUNNABLE: parent_state = "runble"; break;
-    case RUNNING:  parent_state = "run"; break;
-    case ZOMBIE:   parent_state = "zombie"; break;
-    default:       parent_state = "unknown"; break;
+    case UNUSED:   parent_state = "UNUSED"; break;
+    case SLEEPING: parent_state = "SLEEPING"; break;
+    case RUNNABLE: parent_state = "RUNNABLE"; break;
+    case RUNNING:  parent_state = "RUNNING"; break;
+    case ZOMBIE:   parent_state = "ZOMBIE"; break;
+    default:       parent_state = "UNKNOWN"; break;
   }
 
   // 打印当前进程的父进程信息
@@ -362,12 +362,12 @@ void exit(int status) {
       // 根据child_proc->state打印子进程状态
       const char *child_state;
       switch(child_proc->state) {
-        case UNUSED:   child_state = "unused"; break;
-        case SLEEPING: child_state = "sleep"; break;
-        case RUNNABLE: child_state = "runble"; break;
-        case RUNNING:  child_state = "run"; break;
-        case ZOMBIE:   child_state = "zombie"; break;
-        default:       child_state = "unknown"; break;
+        case UNUSED:   child_state = "UNUSSED"; break;
+        case SLEEPING: child_state = "SLEEPING"; break;
+        case RUNNABLE: child_state = "RUNNABLE"; break;
+        case RUNNING:  child_state = "RUNNING"; break;
+        case ZOMBIE:   child_state = "ZOMBIE"; break;
+        default:       child_state = "UNKNOWN"; break;
       }
 
       exit_info("proc %d exit, child %d, pid %d, name %s, state %s\n",
