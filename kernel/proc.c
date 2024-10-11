@@ -330,6 +330,21 @@ void exit(int status) {
   // as anything else.
   acquire(&p->lock);
   struct proc *original_parent = p->parent;
+
+  // 根据original_parent->state打印父进程状态
+  const char *parent_state;
+  switch(original_parent->state) {
+    case UNUSED:   parent_state = "unused"; break;
+    case SLEEPING: parent_state = "sleep"; break;
+    case RUNNABLE: parent_state = "runble"; break;
+    case RUNNING:  parent_state = "run"; break;
+    case ZOMBIE:   parent_state = "zombie"; break;
+    default:       parent_state = "unknown"; break;
+  }
+
+  // 打印当前进程的父进程信息
+  exit_info("proc %d exit, parent pid %d, name %s, state %s\n", 
+            p->pid, original_parent->pid, original_parent->name, parent_state);
   release(&p->lock);
 
   // we need the parent's lock in order to wake it up from wait().
@@ -337,6 +352,29 @@ void exit(int status) {
   acquire(&original_parent->lock);
 
   acquire(&p->lock);
+
+  // 打印当前进程的子进程信息
+  int child_count = 0;
+  struct proc *child_proc;
+  for (child_proc = proc; child_proc < &proc[NPROC]; child_proc++) {
+    if (child_proc->parent == p) {
+      
+      // 根据child_proc->state打印子进程状态
+      const char *child_state;
+      switch(child_proc->state) {
+        case UNUSED:   child_state = "unused"; break;
+        case SLEEPING: child_state = "sleep"; break;
+        case RUNNABLE: child_state = "runble"; break;
+        case RUNNING:  child_state = "run"; break;
+        case ZOMBIE:   child_state = "zombie"; break;
+        default:       child_state = "unknown"; break;
+      }
+
+      exit_info("proc %d exit, child %d, pid %d, name %s, state %s\n",
+                p->pid, child_count, child_proc->pid, child_proc->name, child_state);
+      child_count++;
+    }
+  }
 
   // Give any children to init.
   reparent(p);
